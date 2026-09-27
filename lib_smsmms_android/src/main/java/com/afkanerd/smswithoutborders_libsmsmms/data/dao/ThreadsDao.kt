@@ -87,6 +87,7 @@ interface ThreadsDao {
             "tc.isMms, " +
             "tc.isBlocked, " +
             "tc.isPinned," +
+            "tc.subId," +
             "SUM(CASE WHEN read = 0 THEN 1 ELSE 0 END) as unreadCount, " +
             "c.body AS snippet " +
             "FROM Threads tc LEFT JOIN Conversations c " +
@@ -109,6 +110,7 @@ interface ThreadsDao {
             "tc.isMms, " +
             "tc.isBlocked, " +
             "tc.isPinned," +
+            "tc.subId," +
             "SUM(CASE WHEN read = 0 THEN 1 ELSE 0 END) as unreadCount, " +
             "c.body AS snippet " +
             "FROM Threads tc LEFT JOIN Conversations c " +
