@@ -41,8 +41,12 @@ import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.loadRawSmsMms
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.loadRawThreads
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.retrieveContactName
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.retrieveContactPhoto
+import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.getSimCardInformation
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsGetDeleteSystem
+import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsGetSimVisible
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.unblockContact
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -153,7 +157,7 @@ open class ThreadsViewModel: ViewModel() {
                     InboxType.BLOCKED -> threadsDao.getIsBlocked()
                     InboxType.DRAFTS -> threadsDao.getType(Telephony.Sms.MESSAGE_TYPE_DRAFT)
                     InboxType.MUTED -> threadsDao.getIsMute()
-                    else -> threadsDao.getThreads()
+                    else -> threadsDao.getThreads(getHiddenSubIds(context))
                 }
             }
         )
@@ -371,6 +375,14 @@ open class ThreadsViewModel: ViewModel() {
 
     private fun getContactPhoto(context: Context, phoneNumber: String): String? {
         return if(!context.isDefault()) null else context.retrieveContactPhoto(phoneNumber)
+    }
+
+    private fun getHiddenSubIds(context: Context): List<Long> {
+        val subscriptionIds = context.getSimCardInformation()
+            ?.map { it.subscriptionId.toLong() } ?: return emptyList()
+        return runBlocking {
+            subscriptionIds.filterNot { context.settingsGetSimVisible(it).first() }
+        }
     }
 
     fun execMigrations(context: Context) {

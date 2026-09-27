@@ -9,8 +9,10 @@ import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.NotificationT
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.getDatabase
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.registerIncomingSms
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.sendNotificationBroadcast
+import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsGetSimNotify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 //import org.bouncycastle.operator.OperatorCreationException;
@@ -24,7 +26,10 @@ class SmsDataReceivedReceiver : BroadcastReceiver() {
                 CoroutineScope(Dispatchers.IO).launch {
                     val conversation = context.registerIncomingSms(intent, true)
                     context.getDatabase().threadsDao()?.get(conversation.sms?.thread_id!!)?.let {
-                        if(!it.isMute) context.sendNotificationBroadcast(
+                        val subId = conversation.sms?.sub_id
+                        val simNotifyEnabled = subId == null ||
+                                context.settingsGetSimNotify(subId).first()
+                        if(!it.isMute && simNotifyEnabled) context.sendNotificationBroadcast(
                             conversation, type = NotificationTxType.DATA)
                     }
                 }

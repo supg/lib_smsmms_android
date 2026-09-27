@@ -15,11 +15,18 @@ interface ThreadsDao {
     @Query("SELECT * FROM Threads WHERE isArchive = 0 AND address IS NOT NULL ORDER BY isPinned DESC, date DESC")
     fun getThreads0(): PagingSource<Int, Threads>
 
+    @Query("SELECT * FROM Threads WHERE isArchive = 0 AND address IS NOT NULL AND subId NOT IN (:hiddenSubIds) ORDER BY isPinned DESC, date DESC")
+    fun getThreads0(hiddenSubIds: List<Long>): PagingSource<Int, Threads>
+
     @Query("SELECT * FROM Threads WHERE isArchive = 0 AND address IS NOT NULL AND isPinned = 1 ORDER BY date DESC, isPinned DESC")
     fun getPinnedOnly(): PagingSource<Int, Threads>
 
     fun getThreads(): PagingSource<Int, Threads>{
         return this.getThreads0();
+    }
+
+    fun getThreads(hiddenSubIds: List<Long>): PagingSource<Int, Threads> {
+        return if (hiddenSubIds.isEmpty()) this.getThreads0() else this.getThreads0(hiddenSubIds)
     }
 
     @Query("SELECT * FROM Threads WHERE isArchive = 1 ORDER BY date DESC")

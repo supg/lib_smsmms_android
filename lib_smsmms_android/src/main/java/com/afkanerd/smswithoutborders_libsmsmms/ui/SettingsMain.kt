@@ -26,9 +26,11 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -42,8 +44,15 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.afkanerd.lib_smsmms_android.R
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.getCurrentLocale
+import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.getSimCardInformation
+import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.getSubscriptionName
+import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.isDualSim
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.setLocale
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsGetDeleteSystem
+import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsGetSimNotify
+import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsGetSimVisible
+import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsSetSimNotify
+import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsSetSimVisible
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsGetEnable24HourFormat
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsGetEnableContextReplies
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsGetEnableSwipeBehaviour
@@ -59,6 +68,8 @@ import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsSetGe
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsSetKeepMessagesArchived
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsSetStoreTelephonyDb
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsSetTheme
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,6 +118,25 @@ fun SettingsMain(
 
     var enable24HoursFormat by remember {
         mutableStateOf(context.settingsGetEnable24HourFormat)
+    }
+
+    val coroutineScope = rememberCoroutineScope()
+    val simSubscriptions = remember {
+        if (context.isDualSim()) context.getSimCardInformation() ?: mutableListOf() else mutableListOf()
+    }
+    val simVisibleStates = remember {
+        simSubscriptions.associate { it.subscriptionId.toLong() to mutableStateOf(true) }
+    }
+    val simNotifyStates = remember {
+        simSubscriptions.associate { it.subscriptionId.toLong() to mutableStateOf(true) }
+    }
+
+    LaunchedEffect(Unit) {
+        simSubscriptions.forEach { info ->
+            val subId = info.subscriptionId.toLong()
+            simVisibleStates[subId]?.value = context.settingsGetSimVisible(subId).first()
+            simNotifyStates[subId]?.value = context.settingsGetSimNotify(subId).first()
+        }
     }
 
     Scaffold(
@@ -272,6 +302,44 @@ fun SettingsMain(
             ) {
                 context.settingsSetEnable24HourFormat(it ?: enable24HoursFormat)
                 enable24HoursFormat = it ?: enable24HoursFormat
+            }
+
+            if (simSubscriptions.isNotEmpty()) {
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                Text(
+                    stringResource(R.string.per_sim_behavior),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+
+                simSubscriptions.forEach { info ->
+                    val subId = info.subscriptionId.toLong()
+                    val simLabel = context.getSubscriptionName(subId)
+                    var visible by simVisibleStates.getValue(subId)
+                    var notify by simNotifyStates.getValue(subId)
+
+                    SettingsItem(
+                        itemTitle = stringResource(R.string.sim_show_in_conversations, simLabel),
+                        checked = visible,
+                    ) {
+                        val newValue = it ?: visible
+                        visible = newValue
+                        coroutineScope.launch {
+                            context.settingsSetSimVisible(subId, newValue)
+                        }
+                    }
+
+                    SettingsItem(
+                        itemTitle = stringResource(R.string.sim_notify_on_new_message, simLabel),
+                        checked = notify,
+                    ) {
+                        val newValue = it ?: notify
+                        notify = newValue
+                        coroutineScope.launch {
+                            context.settingsSetSimNotify(subId, newValue)
+                        }
+                    }
+                }
             }
 
         }

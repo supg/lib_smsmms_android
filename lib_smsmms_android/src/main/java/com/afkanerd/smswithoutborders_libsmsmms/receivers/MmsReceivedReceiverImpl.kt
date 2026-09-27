@@ -14,9 +14,11 @@ import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.NotificationT
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.getDatabase
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.insertSms
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.sendNotificationBroadcast
+import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.settingsGetSimNotify
 import com.klinker.android.send_message.MmsReceivedReceiver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class MmsReceivedReceiverImpl: MmsReceivedReceiver() {
@@ -44,7 +46,10 @@ class MmsReceivedReceiverImpl: MmsReceivedReceiver() {
                             context.insertSms(conversation)
                             context.getDatabase().threadsDao()?.get(conversation.sms?.thread_id!!)
                                 ?.let {
-                                    if(!it.isMute)
+                                    val subId = conversation.sms?.sub_id
+                                    val simNotifyEnabled = subId == null ||
+                                            context.settingsGetSimNotify(subId).first()
+                                    if(!it.isMute && simNotifyEnabled)
                                         context.sendNotificationBroadcast(
                                             conversation,
                                             type = NotificationTxType.MMS

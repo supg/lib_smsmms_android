@@ -21,4 +21,6 @@ data class Threads(
     var unread: Boolean = true,
     @ColumnInfo(defaultValue = "0")
     var isPinned: Boolean = false,
+    @ColumnInfo(defaultValue = "-1")
+    var subId: Long = -1,
 )

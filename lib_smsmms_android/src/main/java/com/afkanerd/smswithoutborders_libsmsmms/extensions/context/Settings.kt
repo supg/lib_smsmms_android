@@ -4,11 +4,14 @@ import android.content.Context
 import androidx.core.content.edit
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.Settings.SETTINGS_CONVERSATION_SUBSCRIPTION_ID
+import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.Settings.SETTINGS_SIM_VISIBLE
+import com.afkanerd.smswithoutborders_libsmsmms.extensions.context.Settings.SETTINGS_SIM_NOTIFY
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -26,6 +29,8 @@ private object Settings {
     const val SETTINGS_ENABLE_CONTEXT_REPLIES = "SETTINGS_ENABLE_CONTEXT_REPLIES"
     const val SETTINGS_ENABLE_24_HOUR_FORMAT = "SETTINGS_ENABLE_24_HOUR_FORMAT"
     const val SETTINGS_CONVERSATION_SUBSCRIPTION_ID = "SETTINGS_CONVERSATION_SUBSCRIPTION_ID"
+    const val SETTINGS_SIM_VISIBLE = "SETTINGS_SIM_VISIBLE"
+    const val SETTINGS_SIM_NOTIFY = "SETTINGS_SIM_NOTIFY"
 }
 
 fun Context.settingsGetConversationsSubscriptionId(address: String): Flow<Long?>  =
@@ -143,6 +148,36 @@ suspend fun Context.settingsSetConversationsSubscriptionId(address: String, subs
         val key = longPreferencesKey("${address}_${SETTINGS_CONVERSATION_SUBSCRIPTION_ID}")
         it.toMutablePreferences().also { preferences ->
             preferences[key] = subscriptionId
+        }
+    }
+}
+
+fun Context.settingsGetSimVisible(subscriptionId: Long): Flow<Boolean> =
+    dataStore.data.map { preferences ->
+        val key = booleanPreferencesKey("${subscriptionId}_${SETTINGS_SIM_VISIBLE}")
+        preferences[key] ?: true
+    }
+
+suspend fun Context.settingsSetSimVisible(subscriptionId: Long, visible: Boolean) {
+    dataStore.updateData {
+        val key = booleanPreferencesKey("${subscriptionId}_${SETTINGS_SIM_VISIBLE}")
+        it.toMutablePreferences().also { preferences ->
+            preferences[key] = visible
+        }
+    }
+}
+
+fun Context.settingsGetSimNotify(subscriptionId: Long): Flow<Boolean> =
+    dataStore.data.map { preferences ->
+        val key = booleanPreferencesKey("${subscriptionId}_${SETTINGS_SIM_NOTIFY}")
+        preferences[key] ?: true
+    }
+
+suspend fun Context.settingsSetSimNotify(subscriptionId: Long, notify: Boolean) {
+    dataStore.updateData {
+        val key = booleanPreferencesKey("${subscriptionId}_${SETTINGS_SIM_NOTIFY}")
+        it.toMutablePreferences().also { preferences ->
+            preferences[key] = notify
         }
     }
 }

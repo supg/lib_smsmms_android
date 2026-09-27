@@ -48,6 +48,7 @@ interface ConversationsDao {
                     conversationId = conversationId,
                     isArchive = false,
                     isMms = isMms,
+                    subId = sms.sub_id,
                 )
             )
         } else {
@@ -62,7 +63,8 @@ interface ConversationsDao {
                     conversationId = conversationId,
                     isMute = thread.isMute,
                     isArchive = if(thread.isArchive) keepArchived else false,
-                    isMms = isMms
+                    isMms = isMms,
+                    subId = sms.sub_id,
                 )
             )
         }
