@@ -36,7 +36,6 @@ import kotlin.jvm.java
     autoMigrations = [
         AutoMigration(from=2, to=3),
         AutoMigration(from=3, to=4, spec= MigrateFrom3To4::class),
-        AutoMigration(from=4, to=5),
     ]
 )
 abstract class DatabaseImpl : RoomDatabase() {
@@ -77,9 +76,16 @@ abstract class DatabaseImpl : RoomDatabase() {
                         databaseFile.absolutePath,
                     )
                         .openHelperFactory(SupportOpenHelperFactory(rawBytes))
+                        .addMigrations(MIGRATION_4_5)
                         .fallbackToDestructiveMigration(false)
                         .build()
                 }
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `Threads` ADD COLUMN `subId` INTEGER NOT NULL DEFAULT -1")
             }
         }
     }
